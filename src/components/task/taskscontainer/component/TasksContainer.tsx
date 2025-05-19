@@ -1,4 +1,12 @@
-import { Button, Container, Stack, TextField, Typography } from "@mui/material";
+import {
+  Alert,
+  Box,
+  Button,
+  Container,
+  Stack,
+  TextField,
+  Typography,
+} from "@mui/material";
 import React, { useEffect, useState } from "react";
 import { TaskList } from "../../tasklist/component/TaskList";
 import { taskService } from "../../../../service/api/task/TaskService";
@@ -41,6 +49,15 @@ export const TasksContainer: React.FC = () => {
     }
   }, [debouncedQuery]);
 
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => {
+        setError("");
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [error]);
+
   const onSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     event.preventDefault();
     setQuery(event.target.value);
@@ -66,10 +83,11 @@ export const TasksContainer: React.FC = () => {
     try {
       const newTask = await taskService.createTask(task);
       setTasks((prevTasks) => [...prevTasks, newTask]);
-      setIsTaskFormModalOpen(false);
     } catch (error) {
       console.error("Failed to update task:", task);
       setError("Failed to update task. Please try again.");
+    } finally {
+      setIsTaskFormModalOpen(false);
     }
   };
 
@@ -81,17 +99,17 @@ export const TasksContainer: React.FC = () => {
           task.id === updatedTask.id ? updatedTask : task
         )
       );
-      setIsTaskFormModalOpen(false);
     } catch (error) {
       console.error("Failed to update task:", task);
       setError("Failed to update task. Please try again.");
+    } finally {
+      setIsTaskFormModalOpen(false);
     }
   };
 
   const onDeleteTask = async (id: number) => {
     try {
       setTasks((prevTasks) => prevTasks.filter((task) => task.id !== id));
-
       await taskService.deleteTask(id);
     } catch (error) {
       console.error("Failed to delete task:", error);
@@ -114,6 +132,9 @@ export const TasksContainer: React.FC = () => {
       >
         <TaskForm task={task} onSave={onSaveTask} onUpdate={onUpdateTask} />
       </Modal>
+      <Box sx={{ pb: 1 }}>
+        {error && <Alert severity="error">{error}</Alert>}
+      </Box>
       <Stack direction={"row"} spacing={3}>
         <TextField
           sx={{}}
@@ -146,13 +167,10 @@ export const TasksContainer: React.FC = () => {
         onOpen={onOpenTaskFormModal}
       />
       {tasks.length === 0 && (
-        <Typography
-          variant="h6"
-          color="text.secondary"
-          sx={{ p: 2, textAlign: "left" }}
-        >
-          {"No tasks found. Create a new task to get started!"}
-        </Typography>
+        <Alert severity="info"> {"No tasks found. Create a new task to get started!"}</Alert>
+        // <Typography variant="h6" color="text.secondary" sx={{ pt: 10 }}>
+          
+        // </Typography>
       )}
     </Container>
   );
